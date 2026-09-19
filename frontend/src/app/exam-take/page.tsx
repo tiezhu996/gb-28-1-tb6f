@@ -5,7 +5,7 @@ import { useCountdown } from '@/hooks/useCountdown';
 import { recordApi, type AnswerInput } from '@/api/record';
 import { examApi } from '@/api/exam';
 import { QuestionTypeBadge } from '@/components/StatusBadge';
-import { questionTypeText } from '@/utils/format';
+import { proctorAlertStatusText, questionTypeText } from '@/utils/format';
 import type { Exam, ExamRecord } from '@/types';
 
 function ExamTake() {
@@ -20,11 +20,11 @@ function ExamTake() {
   const [marked, setMarked] = useState<Set<string>>(new Set());
   const [current, setCurrent] = useState(0);
   const [cheatCount, setCheatCount] = useState(0);
-  const [cheatEvents, setCheatEvents] = useState<{ type: string; detail: string }[]>([]);
+  const [alertStatus, setAlertStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [notified5, setNotified5] = useState(false);
   const cheatRef = useRef(0);
-  const eventsRef = useRef<{ type: string; detail: string }[]>([]);
+  const recordRef = useRef<ExamRecord | null>(null);
 
   const load = useCallback(async () => {
     if (!recordId && !examId) return;
@@ -37,6 +37,8 @@ function ExamTake() {
       return;
     }
     setRecord(rec);
+    recordRef.current = rec;
+    setAlertStatus(rec.alert_status ?? '');
     try {
       const e = await examApi.get(rec.exam_id);
       setExam(e);
@@ -54,36 +56,32 @@ function ExamTake() {
     load();
   }, [load]);
 
-  // 防作弊：切屏检测（visibilitychange）+ 禁止复制粘贴
+  // 防作弊：切屏检测（visibilitychange）+ 禁止复制粘贴；每次事件实时上报留痕
   useEffect(() => {
+    const report = (type: string, detail: string) => {
+      cheatRef.current += 1;
+      setCheatCount(cheatRef.current);
+      const rec = recordRef.current;
+      if (!rec || rec.status !== 'in_progress') return;
+      recordApi
+        .reportProctorEvent(rec.id, { type, detail: `${detail}（第${cheatRef.current}次）` })
+        .then((state) => setAlertStatus(state.alert_status))
+        .catch(() => {
+          // 留痕失败不影响答题
+        });
+    };
     const onVisibility = () => {
-      if (document.hidden) {
-        cheatRef.current += 1;
-        setCheatCount(cheatRef.current);
-        eventsRef.current.push({ type: 'switch_tab', detail: `第${cheatRef.current}次切屏` });
-        setCheatEvents([...eventsRef.current]);
-      }
+      if (document.hidden) report('switch_tab', '切屏');
     };
     const onCopy = (e: ClipboardEvent) => {
       e.preventDefault();
-      cheatRef.current += 1;
-      setCheatCount(cheatRef.current);
-      eventsRef.current.push({ type: 'copy_paste', detail: '尝试复制' });
-      setCheatEvents([...eventsRef.current]);
+      report('copy_paste', '尝试复制');
     };
     const onPaste = (e: ClipboardEvent) => {
       e.preventDefault();
-      cheatRef.current += 1;
-      setCheatCount(cheatRef.current);
-      eventsRef.current.push({ type: 'copy_paste', detail: '尝试粘贴' });
-      setCheatEvents([...eventsRef.current]);
+      report('copy_paste', '尝试粘贴');
     };
-    const onBlur = () => {
-      cheatRef.current += 1;
-      setCheatCount(cheatRef.current);
-      eventsRef.current.push({ type: 'blur', detail: '窗口失焦' });
-      setCheatEvents([...eventsRef.current]);
-    };
+    const onBlur = () => report('blur', '窗口失焦');
     document.addEventListener('visibilitychange', onVisibility);
     document.addEventListener('copy', onCopy);
     document.addEventListener('paste', onPaste);
@@ -108,7 +106,8 @@ function ExamTake() {
       setSubmitting(true);
       try {
         const ansList: AnswerInput[] = Object.entries(answers).map(([question_id, answer]) => ({ question_id, answer }));
-        await recordApi.submit(record.id, ansList, cheatRef.current, eventsRef.current);
+        // 监考事件已实时上报留痕，提交时仅携带总次数
+        await recordApi.submit(record.id, ansList, cheatRef.current, []);
         alert(auto ? '考试时间到，答卷已自动提交' : '答卷提交成功，客观题已自动评分');
         router.push('/records');
       } catch (err) {
@@ -255,6 +254,11 @@ function ExamTake() {
           <h3 className="text-sm font-semibold text-gray-700">题目导航</h3>
           <span className="text-xs text-red-500">切屏 {cheatCount} 次</span>
         </div>
+        {alertStatus && (
+          <p className="mt-2 rounded-lg bg-red-50 px-2 py-1 text-xs text-red-600">
+            ⚠️ 监考告警已生成（{proctorAlertStatusText(alertStatus)}），请规范作答
+          </p>
+        )}
         <div className="mt-3 grid grid-cols-6 gap-1.5">
           {record.questions.map((item, i) => {
             const answered = answers[item.question_id] && answers[item.question_id].trim() !== '';

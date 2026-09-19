@@ -61,6 +61,7 @@ func main() {
 	recordRepo := repository.NewMongoExamRecordRepository(db.DB)
 	wrongBookRepo := repository.NewMongoWrongBookRepository(db.DB)
 	auditRepo := repository.NewMongoAuditRepository(db.DB)
+	proctorAlertRepo := repository.NewMongoProctorAlertRepository(db.DB)
 
 	userSvc := service.NewUserService(userRepo, util.Logger, cfg)
 	questionSvc := service.NewQuestionService(questionRepo, util.Logger)
@@ -68,6 +69,7 @@ func main() {
 	recordSvc := service.NewExamRecordService(recordRepo, examSvc, util.Logger)
 	wrongBookSvc := service.NewWrongBookService(wrongBookRepo, questionSvc, recordSvc, util.Logger)
 	auditSvc := service.NewAuditService(auditRepo, util.Logger)
+	proctorAlertSvc := service.NewProctorAlertService(proctorAlertRepo, recordRepo, util.Logger)
 
 	if cfg.SeedEnabled {
 		if err := migrations.Seed(ctx, userSvc); err != nil {
@@ -76,12 +78,13 @@ func main() {
 	}
 
 	hs := &router.Handlers{
-		User:       handler.NewUserHandler(userSvc, util.Logger),
-		Question:   handler.NewQuestionHandler(questionSvc, util.Logger),
-		Exam:       handler.NewExamHandler(examSvc, util.Logger),
-		ExamRecord: handler.NewExamRecordHandler(recordSvc, util.Logger),
-		WrongBook:  handler.NewWrongBookHandler(wrongBookSvc, util.Logger),
-		Audit:      handler.NewAuditHandler(auditSvc, util.Logger),
+		User:         handler.NewUserHandler(userSvc, util.Logger),
+		Question:     handler.NewQuestionHandler(questionSvc, util.Logger),
+		Exam:         handler.NewExamHandler(examSvc, util.Logger),
+		ExamRecord:   handler.NewExamRecordHandler(recordSvc, util.Logger),
+		WrongBook:    handler.NewWrongBookHandler(wrongBookSvc, util.Logger),
+		Audit:        handler.NewAuditHandler(auditSvc, util.Logger),
+		ProctorAlert: handler.NewProctorAlertHandler(proctorAlertSvc, util.Logger),
 	}
 
 	engine := gin.New()

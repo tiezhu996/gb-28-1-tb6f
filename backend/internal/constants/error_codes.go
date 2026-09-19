@@ -2,7 +2,7 @@ package constants
 
 // 统一错误码定义。
 // 约定：code=0 表示成功；业务错误码 1001-1999 为通用，2001-2999 用户，3001-3999 题库，
-// 4001-4999 试卷/考试，5001-5999 考试记录，6001-6999 错题本，7001-7999 审计。
+// 4001-4999 试卷/考试，5001-5999 考试记录，6001-6999 错题本，7001-7999 审计，8001-8999 监考告警。
 // 注意：每个 service/handler 在抛出错误时必须手动拼接包含实体名、字段名、角色名的 message。
 const (
 	CodeOK               = 0    // 成功
@@ -46,6 +46,12 @@ const (
 
 	// 审计模块
 	CodeAuditNotFound = 7001 // 审计日志不存在
+
+	// 监考告警模块
+	CodeAlertNotFound       = 8001 // 监考告警不存在
+	CodeAlertAlreadyHandled = 8002 // 监考告警已被处理（并发处理只能成功一次）
+	CodeAlertStatusErr      = 8003 // 监考告警状态非法
+	CodeProctorEventInvalid = 8004 // 监考事件类型非法
 )
 
 // ErrorCodeText 返回错误码对应的默认文案（供 messages 与 handler 包装使用）。
@@ -109,6 +115,14 @@ func ErrorCodeText(code int) string {
 		return "错题已存在于错题本"
 	case CodeAuditNotFound:
 		return "审计日志不存在"
+	case CodeAlertNotFound:
+		return "监考告警不存在"
+	case CodeAlertAlreadyHandled:
+		return "监考告警已被处理，并发处理只能成功一次"
+	case CodeAlertStatusErr:
+		return "监考告警状态非法或不可执行该操作"
+	case CodeProctorEventInvalid:
+		return "监考事件类型非法"
 	default:
 		return "未知错误"
 	}

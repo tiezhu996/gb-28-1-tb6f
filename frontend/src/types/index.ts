@@ -86,6 +86,14 @@ export interface AttemptQuestion {
   marked?: boolean;
 }
 
+export interface ProctorEvent {
+  type: string;
+  detail: string;
+  count: number;
+  occurred_at: string;
+  last_at: string;
+}
+
 export interface ExamRecord {
   id: string;
   exam_id: string;
@@ -100,9 +108,37 @@ export interface ExamRecord {
   final_score: number;
   pass_score: number;
   cheat_count: number;
+  proctor_events?: ProctorEvent[];
+  proctor_stats?: Record<string, number>;
+  alert_status?: string;
   auto_submitted: boolean;
   questions: AttemptQuestion[];
   created_at: string;
+}
+
+export interface ProctorAlert {
+  id: string;
+  record_id: string;
+  exam_id: string;
+  exam_title: string;
+  student_id: string;
+  student_name: string;
+  trigger_type: string;
+  trigger_count: number;
+  type_stats: Record<string, number>;
+  status: string;
+  handler_id?: string;
+  handler_name?: string;
+  handle_note?: string;
+  handled_at?: string | null;
+  created_at: string;
+}
+
+export interface ProctorState {
+  record_id: string;
+  proctor_stats: Record<string, number>;
+  alert_status: string;
+  alert_created: boolean;
 }
 
 export interface WrongBook {

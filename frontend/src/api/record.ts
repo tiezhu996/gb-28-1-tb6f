@@ -1,9 +1,14 @@
 import { request, buildQuery } from '@/utils/request';
-import type { ExamRecord, ExamReport, PageResult } from '@/types';
+import type { ExamRecord, ExamReport, PageResult, ProctorState } from '@/types';
 
 export interface AnswerInput {
   question_id: string;
   answer: string;
+}
+
+export interface ProctorEventInput {
+  type: string;
+  detail: string;
 }
 
 export const recordApi = {
@@ -17,6 +22,13 @@ export const recordApi = {
     return request<ExamRecord>(`/exam-records/${id}/submit`, {
       method: 'POST',
       body: JSON.stringify({ answers, cheat_count: cheatCount, cheat_events: cheatEvents }),
+    });
+  },
+  // 答题时实时上报监考事件（每次切屏/粘贴单独留痕）
+  reportProctorEvent(id: string, event: ProctorEventInput) {
+    return request<ProctorState>(`/exam-records/${id}/proctor-events`, {
+      method: 'POST',
+      body: JSON.stringify(event),
     });
   },
   get(id: string) {

@@ -16,12 +16,13 @@ import (
 
 // Handlers 聚合所有 HTTP 处理器。
 type Handlers struct {
-	User       *handler.UserHandler
-	Question   *handler.QuestionHandler
-	Exam       *handler.ExamHandler
-	ExamRecord *handler.ExamRecordHandler
-	WrongBook  *handler.WrongBookHandler
-	Audit      *handler.AuditHandler
+	User         *handler.UserHandler
+	Question     *handler.QuestionHandler
+	Exam         *handler.ExamHandler
+	ExamRecord   *handler.ExamRecordHandler
+	WrongBook    *handler.WrongBookHandler
+	Audit        *handler.AuditHandler
+	ProctorAlert *handler.ProctorAlertHandler
 }
 
 // Setup 注册全局中间件与全部业务路由。
@@ -59,4 +60,5 @@ func Setup(engine *gin.Engine, cfg *config.Config, rdb *redis.Client, hs *Handle
 	RegisterExamRecordRoutes(authGroup, hs.ExamRecord)
 	RegisterWrongBookRoutes(authGroup, hs.WrongBook)
 	RegisterAuditRoutes(authGroup, hs.Audit)
+	RegisterProctorAlertRoutes(authGroup, hs.ProctorAlert)
 }

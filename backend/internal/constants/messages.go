@@ -16,6 +16,8 @@ const (
 	MsgRecordGradedSuccess   = "主观题批改完成"
 	MsgWrongBookAdded        = "已加入错题本"
 	MsgWrongBookResolved     = "已标记为已掌握"
+	MsgAlertHandleSuccess    = "监考告警处理完成"
+	MsgProctorEventRecorded  = "监考事件已留痕"
 
 	// 错误提示文案（与 error_codes.go 对应，但由 service/handler 手动拼接实体名、字段名、角色名）
 	MsgValidationFailed    = "参数校验失败：字段 %s 不符合要求"
@@ -33,4 +35,12 @@ const (
 	MsgRecordStatusInvalid = "考试记录模块：状态字段 %s 非法，无法执行该操作"
 	MsgRecordExpired       = "考试记录模块：考试时长已超时"
 	MsgWrongBookExists     = "错题本模块：question_id=%s 已在错题本中"
+
+	// 监考告警模块（处理意见必填、并发处理只能成功一次）
+	MsgAlertNotFound       = "监考告警模块：id=%s 的告警不存在"
+	MsgAlertAlreadyHandled = "监考告警模块：id=%s 的告警已被教师 %s 处理，并发处理只能成功一次"
+	MsgAlertStatusInvalid  = "监考告警模块：状态字段 %s 非法，无法执行该操作"
+	MsgAlertNoteRequired   = "监考告警模块：处理意见字段 note 必填"
+	MsgProctorEventInvalid = "监考告警模块：事件类型字段 %s 非法"
+	MsgProctorRecordDone   = "监考告警模块：答卷状态字段 %s 已结束，不再产生新告警"
 )

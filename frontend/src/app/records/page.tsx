@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useRecordStore } from '@/stores/recordStore';
 import { DataTable, type Column } from '@/components/DataTable';
 import { Pagination } from '@/components/Pagination';
-import { StatusBadge } from '@/components/StatusBadge';
-import { formatDateTime, recordStatusColor, recordStatusText } from '@/utils/format';
+import { ProctorAlertBadge, StatusBadge } from '@/components/StatusBadge';
+import { formatDateTime, proctorStatsText, recordStatusColor, recordStatusText } from '@/utils/format';
 import type { ExamRecord } from '@/types';
 
 export default function RecordsPage() {
@@ -25,7 +25,12 @@ export default function RecordsPage() {
     { key: 'status', title: '状态', render: (r) => <StatusBadge text={recordStatusText(r.status)} color={recordStatusColor(r.status)} /> },
     { key: 'objective_score', title: '客观题分', render: (r) => <span>{r.objective_score}</span> },
     { key: 'final_score', title: '最终分', render: (r) => <span className="font-semibold">{r.final_score || '-'}</span> },
-    { key: 'cheat_count', title: '切屏次数', render: (r) => <span className={r.cheat_count > 0 ? 'text-red-600' : ''}>{r.cheat_count}</span> },
+    { key: 'proctor_stats', title: '监考事件', render: (r) => (
+        <span className={proctorStatsText(r.proctor_stats) !== '0' ? 'text-red-600' : 'text-gray-500'}>
+          {proctorStatsText(r.proctor_stats)}
+        </span>
+      ) },
+    { key: 'alert_status', title: '告警状态', render: (r) => <ProctorAlertBadge status={r.alert_status} /> },
     { key: 'started_at', title: '开始时间', render: (r) => <span className="text-xs">{formatDateTime(r.started_at)}</span> },
     { key: 'actions', title: '操作', render: (r) => (
         <div className="flex gap-2">

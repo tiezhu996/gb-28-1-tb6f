@@ -8,8 +8,8 @@ import { useExamStore } from '@/stores/examStore';
 import { questionApi } from '@/api/question';
 import { DataTable, type Column } from '@/components/DataTable';
 import { Pagination } from '@/components/Pagination';
-import { StatusBadge } from '@/components/StatusBadge';
-import { examStatusColor, examStatusText, formatDateTime, questionTypeText } from '@/utils/format';
+import { ProctorAlertBadge, StatusBadge } from '@/components/StatusBadge';
+import { examStatusColor, examStatusText, formatDateTime, proctorStatsText, questionTypeText } from '@/utils/format';
 import { EXAM_STATUS } from '@/constants';
 import type { Exam, ExamRecord, Question } from '@/types';
 
@@ -74,7 +74,12 @@ function ExamDetail() {
     { key: 'status', title: '状态', render: (r) => <StatusBadge text={r.status === 'graded' ? '已批改' : r.status === 'submitted' ? '已提交' : '答题中'} color={r.status === 'graded' ? 'green' : r.status === 'submitted' ? 'blue' : 'orange'} /> },
     { key: 'objective_score', title: '客观题分', render: (r) => <span>{r.objective_score}</span> },
     { key: 'final_score', title: '最终分', render: (r) => <span className="font-medium">{r.final_score || '-'}</span> },
-    { key: 'cheat_count', title: '切屏次数', render: (r) => <span className={r.cheat_count > 0 ? 'text-red-600' : ''}>{r.cheat_count}</span> },
+    { key: 'proctor_stats', title: '监考事件', render: (r) => (
+        <span className={proctorStatsText(r.proctor_stats) !== '0' ? 'text-red-600' : 'text-gray-500'}>
+          {proctorStatsText(r.proctor_stats)}
+        </span>
+      ) },
+    { key: 'alert_status', title: '告警状态', render: (r) => <ProctorAlertBadge status={r.alert_status} /> },
     { key: 'started_at', title: '开始时间', render: (r) => <span className="text-xs">{formatDateTime(r.started_at)}</span> },
     { key: 'actions', title: '操作', render: (r) => (
         <button onClick={() => router.push(`/records/review?recordId=${r.id}`)} className="text-brand-600 hover:underline">查看/批改</button>

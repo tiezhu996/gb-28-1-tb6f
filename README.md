@@ -31,8 +31,9 @@ docker compose up -d --build
 3. **在线考试**：倒计时、题目导航快速跳转、标记稍后作答、最后 5 分钟提醒、时间到自动提交。
 4. **自动阅卷与评分**：客观题（单选/多选/判断）提交即自动判分；主观题（填空/简答）教师手动批改；系统汇总成绩生成成绩报告。
 5. **防作弊机制**：切屏/失焦/复制粘贴检测并记录次数与事件；支持随机打乱题目顺序与选项顺序；禁止复制粘贴。
-6. **成绩分析**：平均分、最高分、最低分、及格率、分数段直方图、每题正确率。
-7. **错题回顾**：查看答卷与正确答案对照，错题一键加入错题本，按知识点归类复习。
+6. **监考告警闭环**：答题时每次切屏/粘贴实时单独留痕（同一类事件连续重复只累计次数）；任一类事件达到 3 次自动为当前答卷生成一条待处理告警（重复事件不新增，已结束答卷不再产生）；教师以本人账号受理/驳回（处理意见必填，记录处理时间与结论，并发处理仅成功一次）；学生成绩页与教师记录页同步展示最终告警状态与事件次数。
+7. **成绩分析**：平均分、最高分、最低分、及格率、分数段直方图、每题正确率。
+8. **错题回顾**：查看答卷与正确答案对照，错题一键加入错题本，按知识点归类复习。
 
 ## 技术栈
 
@@ -61,7 +62,7 @@ gb-28-1/
 │   ├── internal/
 │   │   ├── config/           # 环境变量配置
 │   │   ├── database/         # Mongo/Redis 连接
-│   │   ├── model/            # 每个实体一个文件（user/question/exam/exam_record/wrong_book/audit_log）
+│   │   ├── model/            # 每个实体一个文件（user/question/exam/exam_record/proctor_alert/wrong_book/audit_log）
 │   │   ├── dto/              # 每个实体一个 DTO 文件
 │   │   ├── repository/       # 每个实体一个 repository（接口 + Mongo 实现）
 │   │   ├── service/          # 每个实体一个 service（构造器注入）
@@ -77,13 +78,13 @@ gb-28-1/
 │   ├── go.mod / go.sum
 │   └── *_test.go             # service/repository 表驱动测试
 └── frontend/
-    ├── src/api/              # 每个实体一个 API 文件（auth/question/exam/record/wrongBook/audit/user）
+    ├── src/api/              # 每个实体一个 API 文件（auth/question/exam/record/proctorAlert/wrongBook/audit/user）
     ├── src/stores/           # 按实体拆分 zustand store
     ├── src/hooks/            # useAuth / usePagination / useCountdown
     ├── src/utils/            # request.ts（拦截器）/ format.ts
     ├── src/constants/        # 与后端对应枚举
     ├── src/components/       # StatusBadge / DataTable / EmptyState / Modal / ConfirmDialog / Pagination / Navbar
-    ├── src/app/              # App Router 页面（login/register/questions/exams/exam-take/records/reports/wrongbook/audit/users）
+    ├── src/app/              # App Router 页面（login/register/questions/exams/exam-take/records/proctor-alerts/reports/wrongbook/audit/users）
     ├── Dockerfile            # 多阶段构建 + Nginx 托管
     └── nginx.conf            # 静态资源 + /api 反向代理
 ```
@@ -166,6 +167,10 @@ npm run dev                  # http://localhost:3000，/api 已代理到 localho
 | POST | /exam-records/:id/grade | 教师/管理员 | 主观题批改 |
 | POST | /exam-records/:id/auto-submit | 教师/管理员 | 超时自动提交 |
 | GET | /exams/:examId/report | 教师/管理员 | 成绩分析报告 |
+| POST | /exam-records/:id/proctor-events | 学生 | 上报监考事件（切屏/粘贴实时留痕，达阈值自动生成待处理告警） |
+| GET | /proctor-alerts | 教师/管理员 | 监考告警分页（按状态/试卷筛选） |
+| GET | /proctor-alerts/:id | 教师/管理员 | 告警详情 |
+| POST | /proctor-alerts/:id/handle | 教师/管理员 | 受理/驳回告警（处理意见必填，并发仅成功一次） |
 | GET | /wrong-books | 学生 | 错题本分页 |
 | POST | /wrong-books | 学生 | 加入错题本 |
 | GET | /wrong-books/:id | 学生 | 错题详情 |
@@ -173,7 +178,7 @@ npm run dev                  # http://localhost:3000，/api 已代理到 localho
 | DELETE | /wrong-books/:id | 学生 | 移除错题 |
 | GET | /audit-logs | 管理员 | 操作审计日志 |
 
-> 复用关系：`PUT /exams/:id` 与 `POST /exams/:id/publish` 复用 `ExamService.applyStatusTransition`；`POST /questions` 与 `POST /questions/import` 复用 `QuestionService.buildQuestionFromRow/validateQuestion`；`POST /exam-records/:id/submit` 与 `POST /exam-records/:id/auto-submit` 复用 `ExamRecordService.Submit/gradeObjective`。
+> 复用关系：`PUT /exams/:id` 与 `POST /exams/:id/publish` 复用 `ExamService.applyStatusTransition`；`POST /questions` 与 `POST /questions/import` 复用 `QuestionService.buildQuestionFromRow/validateQuestion`；`POST /exam-records/:id/submit` 与 `POST /exam-records/:id/auto-submit` 复用 `ExamRecordService.Submit/gradeObjective`；`GET /exam-records/mine`（学生成绩页）与 `GET /exams/:examId/records`（教师记录页）复用 `ExamRecordRepository.List` 并同享答卷上的告警状态快照。
 
 ### curl 调用示例（含 JWT）
 
@@ -248,6 +253,14 @@ curl -sS http://localhost:3003/healthz
 ### 7. 错题本状态 WrongBookStatus（active / resolved）
 后端：`internal/constants/enums.go`、`internal/model/wrong_book.go`、`internal/dto/wrong_book.go`、`internal/service/wrong_book_service.go`、`internal/handler/wrong_book_handler.go`、`internal/constants/log_templates.go`、`internal/util/formatters.go`。
 前端：`src/constants/index.ts`、`src/app/wrongbook/page.tsx`。
+
+### 8. 监考事件类型 ProctorEventType（switch_tab / copy_paste / blur）
+后端：`internal/constants/enums.go`、`internal/model/exam_record.go`（`ProctorEvent`）、`internal/model/proctor_alert.go`、`internal/dto/proctor_alert.go`、`internal/service/proctor_alert_service.go`、`internal/handler/proctor_alert_handler.go`、`internal/constants/error_codes.go`、`internal/constants/messages.go`、`internal/constants/log_templates.go`、`internal/util/formatters.go`。
+前端：`src/constants/index.ts`、`src/utils/format.ts`、`src/app/exam-take/page.tsx`、`src/app/proctor-alerts/page.tsx`、`src/app/records/review/page.tsx`。
+
+### 9. 监考告警状态 ProctorAlertStatus（pending / accepted / rejected）+ 状态机
+后端：`internal/constants/enums.go`（含 `AlertStatusTransitions` 状态机与 `AlertActionXxx` 动作枚举、`ProctorAlertThreshold=3` 阈值）、`internal/model/proctor_alert.go`、`internal/model/exam_record.go`（`alert_status` 快照）、`internal/dto/proctor_alert.go`、`internal/dto/exam_record.go`、`internal/repository/proctor_alert_repository.go`（`HandleIfPending` 原子条件更新）、`internal/service/proctor_alert_service.go`、`internal/handler/proctor_alert_handler.go`、`internal/constants/error_codes.go`、`internal/constants/messages.go`、`internal/constants/log_templates.go`、`internal/util/formatters.go`、`internal/migrations/indexes.go`（`record_id` 唯一索引）。
+前端：`src/constants/index.ts`、`src/utils/format.ts`、`src/components/StatusBadge.tsx`、`src/app/proctor-alerts/page.tsx`、`src/app/records/page.tsx`（学生成绩页）、`src/app/exams/detail/page.tsx`（教师记录页）、`src/app/records/review/page.tsx`、`src/app/exam-take/page.tsx`。
 
 ## 屎山代码设计要求（跨文件协同改动能力验证）
 

@@ -4,8 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { recordApi } from '@/api/record';
 import { wrongBookApi } from '@/api/wrongBook';
-import { QuestionTypeBadge, StatusBadge } from '@/components/StatusBadge';
-import { answerResultText, formatDateTime, recordStatusColor, recordStatusText } from '@/utils/format';
+import { ProctorAlertBadge, QuestionTypeBadge, StatusBadge } from '@/components/StatusBadge';
+import { answerResultText, formatDateTime, proctorEventTypeText, recordStatusColor, recordStatusText } from '@/utils/format';
 import { ANSWER_RESULT } from '@/constants';
 import type { ExamRecord } from '@/types';
 
@@ -88,8 +88,27 @@ function Review() {
           </p>
           <p className="text-xs text-gray-400">开始 {formatDateTime(record.started_at)}</p>
         </div>
-        <StatusBadge text={recordStatusText(record.status)} color={recordStatusColor(record.status)} />
+        <div className="flex items-center gap-2">
+          <ProctorAlertBadge status={record.alert_status} />
+          <StatusBadge text={recordStatusText(record.status)} color={recordStatusColor(record.status)} />
+        </div>
       </div>
+
+      {(record.proctor_events?.length ?? 0) > 0 && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <h2 className="text-sm font-semibold text-gray-700">监考事件留痕</h2>
+          <ul className="mt-2 space-y-1 text-xs text-gray-500">
+            {record.proctor_events!.map((ev, i) => (
+              <li key={i} className="flex flex-wrap items-center gap-2">
+                <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-600">{proctorEventTypeText(ev.type)}</span>
+                <span>{ev.detail}</span>
+                <span>× {ev.count}</span>
+                <span className="text-gray-400">{formatDateTime(ev.occurred_at)} ~ {formatDateTime(ev.last_at)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {record.questions.map((q, i) => (
         <div key={q.question_id} className="rounded-xl border border-gray-200 bg-white p-5">

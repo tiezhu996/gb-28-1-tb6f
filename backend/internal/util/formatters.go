@@ -120,6 +120,34 @@ func AnswerResultText(r string) string {
 	}
 }
 
+// ProctorEventTypeText 监考事件类型枚举 → 中文文本（switch_tab/copy_paste/blur）。
+func ProctorEventTypeText(t string) string {
+	switch t {
+	case constants.ProctorEventSwitchTab:
+		return "切屏"
+	case constants.ProctorEventCopyPaste:
+		return "复制粘贴"
+	case constants.ProctorEventBlur:
+		return "窗口失焦"
+	default:
+		return "未知事件"
+	}
+}
+
+// ProctorAlertStatusText 监考告警状态枚举 → 中文文本（pending/accepted/rejected）。
+func ProctorAlertStatusText(s string) string {
+	switch s {
+	case constants.AlertStatusPending:
+		return "待处理"
+	case constants.AlertStatusAccepted:
+		return "已受理"
+	case constants.AlertStatusRejected:
+		return "已驳回"
+	default:
+		return "无告警"
+	}
+}
+
 // UserStatusText 用户状态枚举 → 中文文本。
 func UserStatusText(s string) string {
 	if s == constants.UserStatusActive {

@@ -37,6 +37,16 @@ type CheatEvent struct {
 	OccurredAt time.Time `bson:"occurred_at" json:"occurred_at"`
 }
 
+// ProctorEvent 监考事件留痕：每次切屏/粘贴单独上报一条；
+// 同一类事件连续重复时不再新增条目，只累计 Count 并刷新 LastAt。
+type ProctorEvent struct {
+	Type       string    `bson:"type" json:"type"`             // switch_tab / copy_paste / blur
+	Detail     string    `bson:"detail" json:"detail"`         // 事件描述（如“第3次切屏”）
+	Count      int       `bson:"count" json:"count"`           // 连续重复累计次数
+	OccurredAt time.Time `bson:"occurred_at" json:"occurred_at"` // 首次发生时间
+	LastAt     time.Time `bson:"last_at" json:"last_at"`       // 最近一次发生时间
+}
+
 // ExamRecord 考试记录/答卷实体，集合 exam_records。
 // 状态枚举：in_progress / submitted / graded；结果枚举：correct / wrong / partial / unmarked。
 type ExamRecord struct {
@@ -54,6 +64,9 @@ type ExamRecord struct {
 	FinalScore    float64            `bson:"final_score" json:"final_score"` // 最终总分
 	CheatCount    int                `bson:"cheat_count" json:"cheat_count"`
 	CheatEvents   []CheatEvent       `bson:"cheat_events,omitempty" json:"cheat_events"`
+	ProctorEvents []ProctorEvent     `bson:"proctor_events,omitempty" json:"proctor_events"` // 监考事件留痕（连续同类合并计数）
+	ProctorStats  map[string]int     `bson:"proctor_stats,omitempty" json:"proctor_stats"`   // 各类型事件累计次数
+	AlertStatus   string             `bson:"alert_status,omitempty" json:"alert_status"`     // 告警状态快照：pending/accepted/rejected（空=无告警）
 	AutoSubmitted bool               `bson:"auto_submitted" json:"auto_submitted"`
 	CreatedAt     time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt     time.Time          `bson:"updated_at" json:"updated_at"`

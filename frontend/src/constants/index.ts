@@ -71,6 +71,33 @@ export const WRONG_BOOK_STATUS = {
   RESOLVED: 'resolved',
 } as const;
 
+// 监考事件类型（与后端 constants.ProctorEventXxx 对应）
+export const PROCTOR_EVENT_TYPES = {
+  SWITCH_TAB: 'switch_tab',
+  COPY_PASTE: 'copy_paste',
+  BLUR: 'blur',
+} as const;
+
+export type ProctorEventType = (typeof PROCTOR_EVENT_TYPES)[keyof typeof PROCTOR_EVENT_TYPES];
+
+// 监考告警状态（与后端 constants.AlertStatusXxx 对应）
+export const PROCTOR_ALERT_STATUS = {
+  PENDING: 'pending',
+  ACCEPTED: 'accepted',
+  REJECTED: 'rejected',
+} as const;
+
+export type ProctorAlertStatus = (typeof PROCTOR_ALERT_STATUS)[keyof typeof PROCTOR_ALERT_STATUS];
+
+// 告警处理动作（与后端 constants.AlertActionXxx 对应）
+export const PROCTOR_ALERT_ACTIONS = {
+  ACCEPT: 'accept',
+  REJECT: 'reject',
+} as const;
+
+// 触发告警的同类事件次数阈值（与后端 constants.ProctorAlertThreshold 对应）
+export const PROCTOR_ALERT_THRESHOLD = 3;
+
 export const QUESTION_STATUS = {
   DRAFT: 'draft',
   PUBLISHED: 'published',

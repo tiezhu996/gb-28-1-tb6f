@@ -1,6 +1,8 @@
 // 状态徽标：考试/记录状态、题型、难度、角色等（跨页面复用）。
 'use client';
 
+import { proctorAlertStatusColor, proctorAlertStatusText } from '@/utils/format';
+
 const COLOR_MAP: Record<string, string> = {
   gray: 'bg-gray-100 text-gray-700',
   blue: 'bg-blue-100 text-blue-700',
@@ -49,4 +51,9 @@ export function DifficultyBadge({ difficulty }: { difficulty: string }) {
   };
   const [text, color] = map[difficulty] ?? [difficulty, 'gray'];
   return <StatusBadge text={text} color={color} />;
+}
+
+// 监考告警状态徽标（pending/accepted/rejected，空值显示“无告警”）。
+export function ProctorAlertBadge({ status }: { status?: string }) {
+  return <StatusBadge text={proctorAlertStatusText(status)} color={proctorAlertStatusColor(status)} />;
 }

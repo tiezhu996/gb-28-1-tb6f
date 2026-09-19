@@ -89,6 +89,9 @@ type RecordResponse struct {
 	FinalScore      float64                   `json:"final_score"`
 	PassScore       float64                   `json:"pass_score"`
 	CheatCount      int                       `json:"cheat_count"`
+	ProctorEvents   []model.ProctorEvent      `json:"proctor_events"` // 监考事件留痕（连续同类合并计数）
+	ProctorStats    map[string]int            `json:"proctor_stats"`  // 各类型事件累计次数
+	AlertStatus     string                    `json:"alert_status"`   // 告警状态：pending/accepted/rejected（空=无告警）
 	AutoSubmitted   bool                      `json:"auto_submitted"`
 	Questions       []model.AttemptQuestion   `json:"questions"`
 	CreatedAt       time.Time                 `json:"created_at"`
@@ -109,6 +112,9 @@ func ToRecordResponse(r *model.ExamRecord) RecordResponse {
 		SubjectiveScore: r.SubjectiveScore,
 		FinalScore:      r.FinalScore,
 		CheatCount:      r.CheatCount,
+		ProctorEvents:   r.ProctorEvents,
+		ProctorStats:    r.ProctorStats,
+		AlertStatus:     r.AlertStatus,
 		AutoSubmitted:   r.AutoSubmitted,
 		Questions:       r.Questions,
 		CreatedAt:       r.CreatedAt,

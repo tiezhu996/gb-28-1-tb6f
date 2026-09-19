@@ -84,6 +84,36 @@ const (
 	WrongBookStatusResolved = "resolved" // 已掌握
 )
 
+// 监考事件类型枚举（ProctorEventType）。
+// 出现位置：model/exam_record.go、dto/exam_record.go、dto/proctor_alert.go、
+// service/proctor_alert_service.go、handler/proctor_alert_handler.go、constants/error_codes.go、
+// constants/log_templates.go、util/formatters.go、前端 src/constants/index.ts、src/app/exam-take/page.tsx。
+const (
+	ProctorEventSwitchTab = "switch_tab" // 切屏
+	ProctorEventCopyPaste = "copy_paste" // 复制/粘贴
+	ProctorEventBlur      = "blur"       // 窗口失焦
+)
+
+// 监考告警状态枚举（ProctorAlertStatus）。
+// 出现位置：model/proctor_alert.go、model/exam_record.go、dto/proctor_alert.go、dto/exam_record.go、
+// service/proctor_alert_service.go、handler/proctor_alert_handler.go、repository/proctor_alert_repository.go、
+// constants/error_codes.go、constants/log_templates.go、util/formatters.go、
+// 前端 src/constants/index.ts、src/components/StatusBadge.tsx、src/app/proctor-alerts、src/app/records、src/app/exams/detail。
+const (
+	AlertStatusPending  = "pending"  // 待处理
+	AlertStatusAccepted = "accepted" // 已受理
+	AlertStatusRejected = "rejected" // 已驳回
+)
+
+// 监考告警处理动作枚举（ProctorAlertAction）：受理/驳回。
+const (
+	AlertActionAccept = "accept" // 受理（确认违规）
+	AlertActionReject = "reject" // 驳回（误报）
+)
+
+// ProctorAlertThreshold 触发告警的同类监考事件次数阈值：任一类达到该次数即生成一条待处理告警。
+const ProctorAlertThreshold = 3
+
 // 审计操作动作枚举（AuditAction）。
 const (
 	AuditActionCreate  = "create"
@@ -120,6 +150,15 @@ var RecordStatusTransitions = map[string][]string{
 	RecordStatusInProgress: {RecordStatusSubmitted},
 	RecordStatusSubmitted:  {RecordStatusGraded},
 	RecordStatusGraded:     {},
+}
+
+// AlertStatusTransitions 监考告警状态机：待处理 → 已受理/已驳回（终态）。
+// 状态机规则同时存在于 service/proctor_alert_service.go、repository 条件更新、
+// constants/error_codes.go、constants/log_templates.go、util/formatters.go、前端 src/app/proctor-alerts/page.tsx。
+var AlertStatusTransitions = map[string][]string{
+	AlertStatusPending:  {AlertStatusAccepted, AlertStatusRejected},
+	AlertStatusAccepted: {},
+	AlertStatusRejected: {},
 }
 
 // IsValidUserRole 校验角色是否合法。
@@ -162,6 +201,37 @@ func IsValidAnswerResult(r string) bool {
 		return true
 	}
 	return false
+}
+
+// IsValidProctorEventType 校验监考事件类型是否合法。
+func IsValidProctorEventType(t string) bool {
+	switch t {
+	case ProctorEventSwitchTab, ProctorEventCopyPaste, ProctorEventBlur:
+		return true
+	}
+	return false
+}
+
+// IsValidAlertStatus 校验监考告警状态是否合法。
+func IsValidAlertStatus(s string) bool {
+	switch s {
+	case AlertStatusPending, AlertStatusAccepted, AlertStatusRejected:
+		return true
+	}
+	return false
+}
+
+// IsValidAlertAction 校验监考告警处理动作是否合法。
+func IsValidAlertAction(a string) bool {
+	return a == AlertActionAccept || a == AlertActionReject
+}
+
+// AlertStatusFromAction 处理动作映射为告警结论状态（accept→accepted / reject→rejected）。
+func AlertStatusFromAction(action string) string {
+	if action == AlertActionAccept {
+		return AlertStatusAccepted
+	}
+	return AlertStatusRejected
 }
 
 // IsObjectiveQuestion 判断是否客观题（自动阅卷）。

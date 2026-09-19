@@ -3,6 +3,8 @@ import {
   ANSWER_RESULT,
   DIFFICULTY,
   EXAM_STATUS,
+  PROCTOR_ALERT_STATUS,
+  PROCTOR_EVENT_TYPES,
   QUESTION_TYPES,
   RECORD_STATUS,
   ROLES,
@@ -98,4 +100,40 @@ export function recordStatusColor(s: string): string {
     case RECORD_STATUS.GRADED: return 'green';
     default: return 'gray';
   }
+}
+
+export function proctorEventTypeText(t: string): string {
+  switch (t) {
+    case PROCTOR_EVENT_TYPES.SWITCH_TAB: return '切屏';
+    case PROCTOR_EVENT_TYPES.COPY_PASTE: return '复制粘贴';
+    case PROCTOR_EVENT_TYPES.BLUR: return '窗口失焦';
+    default: return t;
+  }
+}
+
+export function proctorAlertStatusText(s?: string): string {
+  switch (s) {
+    case PROCTOR_ALERT_STATUS.PENDING: return '待处理';
+    case PROCTOR_ALERT_STATUS.ACCEPTED: return '已受理';
+    case PROCTOR_ALERT_STATUS.REJECTED: return '已驳回';
+    default: return '无告警';
+  }
+}
+
+export function proctorAlertStatusColor(s?: string): string {
+  switch (s) {
+    case PROCTOR_ALERT_STATUS.PENDING: return 'orange';
+    case PROCTOR_ALERT_STATUS.ACCEPTED: return 'red';
+    case PROCTOR_ALERT_STATUS.REJECTED: return 'green';
+    default: return 'gray';
+  }
+}
+
+// 监考事件次数汇总文本，如「切屏 3 · 粘贴 1」。
+export function proctorStatsText(stats?: Record<string, number>): string {
+  if (!stats) return '0';
+  const parts = Object.entries(stats)
+    .filter(([, n]) => n > 0)
+    .map(([t, n]) => `${proctorEventTypeText(t)} ${n}`);
+  return parts.length > 0 ? parts.join(' · ') : '0';
 }
