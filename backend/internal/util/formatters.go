@@ -128,6 +128,34 @@ func UserStatusText(s string) string {
 	return "已禁用"
 }
 
+// ProctorEventTypeText 监考事件类型枚举 → 中文文本（switch_tab/paste）。
+func ProctorEventTypeText(t string) string {
+	switch t {
+	case constants.ProctorEventSwitchTab:
+		return "切屏"
+	case constants.ProctorEventPaste:
+		return "粘贴"
+	default:
+		return "未知事件"
+	}
+}
+
+// AlertStatusText 监考告警状态枚举 → 中文文本（none/pending/confirmed/rejected）。
+func AlertStatusText(s string) string {
+	switch s {
+	case constants.AlertStatusNone:
+		return "无告警"
+	case constants.AlertStatusPending:
+		return "待处理"
+	case constants.AlertStatusConfirmed:
+		return "已受理"
+	case constants.AlertStatusRejected:
+		return "已驳回"
+	default:
+		return "未知状态"
+	}
+}
+
 // ScoreBandText 分数段标签（成绩分析直方图）。
 func ScoreBandText(band int) string {
 	switch band {

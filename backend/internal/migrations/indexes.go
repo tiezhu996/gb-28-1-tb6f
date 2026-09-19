@@ -28,6 +28,12 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 		{"wrong_books", bson.D{{Key: "student_id", Value: 1}, {Key: "question_id", Value: 1}}, options.Index().SetUnique(true)},
 		{"audit_logs", bson.D{{Key: "created_at", Value: -1}}, nil},
 		{"audit_logs", bson.D{{Key: "module", Value: 1}, {Key: "action", Value: 1}}, nil},
+		{"proctor_events", bson.D{{Key: "record_id", Value: 1}, {Key: "last_at", Value: -1}}, nil},
+		{"proctor_events", bson.D{{Key: "record_id", Value: 1}, {Key: "type", Value: 1}}, nil},
+		// 同一答卷最多一条告警：重复事件不得新增告警（唯一索引兜底并发）
+		{"proctor_alerts", bson.D{{Key: "record_id", Value: 1}}, options.Index().SetUnique(true)},
+		{"proctor_alerts", bson.D{{Key: "status", Value: 1}, {Key: "created_at", Value: -1}}, nil},
+		{"proctor_alerts", bson.D{{Key: "exam_id", Value: 1}}, nil},
 	}
 	for _, idx := range indexes {
 		_, err := db.Collection(idx.coll).Indexes().CreateOne(ctx, mongo.IndexModel{

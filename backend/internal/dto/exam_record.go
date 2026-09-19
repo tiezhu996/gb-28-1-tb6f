@@ -91,11 +91,20 @@ type RecordResponse struct {
 	CheatCount      int                       `json:"cheat_count"`
 	AutoSubmitted   bool                      `json:"auto_submitted"`
 	Questions       []model.AttemptQuestion   `json:"questions"`
+	Proctor         ProctorSummary            `json:"proctor"` // 监考告警摘要（最终告警状态与次数）
 	CreatedAt       time.Time                 `json:"created_at"`
 }
 
-// ToRecordResponse 模型转响应。
+// ToRecordResponse 模型转响应（默认无告警摘要，列表/详情接口应使用 WithProctor 填充）。
 func ToRecordResponse(r *model.ExamRecord) RecordResponse {
+	return ToRecordResponseWithProctor(r, ProctorSummary{AlertStatus: "none"})
+}
+
+// ToRecordResponseWithProctor 模型转响应并嵌入监考告警摘要。
+func ToRecordResponseWithProctor(r *model.ExamRecord, proctor ProctorSummary) RecordResponse {
+	if proctor.AlertStatus == "" {
+		proctor.AlertStatus = "none"
+	}
 	return RecordResponse{
 		ID:              r.ID.Hex(),
 		ExamID:          r.ExamID.Hex(),
@@ -111,6 +120,7 @@ func ToRecordResponse(r *model.ExamRecord) RecordResponse {
 		CheatCount:      r.CheatCount,
 		AutoSubmitted:   r.AutoSubmitted,
 		Questions:       r.Questions,
+		Proctor:         proctor,
 		CreatedAt:       r.CreatedAt,
 	}
 }

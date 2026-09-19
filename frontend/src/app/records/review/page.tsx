@@ -4,9 +4,9 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { recordApi } from '@/api/record';
 import { wrongBookApi } from '@/api/wrongBook';
-import { QuestionTypeBadge, StatusBadge } from '@/components/StatusBadge';
+import { QuestionTypeBadge, StatusBadge, AlertStatusBadge } from '@/components/StatusBadge';
 import { answerResultText, formatDateTime, recordStatusColor, recordStatusText } from '@/utils/format';
-import { ANSWER_RESULT } from '@/constants';
+import { ALERT_STATUS, ANSWER_RESULT } from '@/constants';
 import type { ExamRecord } from '@/types';
 
 function Review() {
@@ -87,6 +87,13 @@ function Review() {
             学生 {record.student_name} · 客观题 {record.objective_score} 分 · 最终 {record.final_score || '-'} 分 · 切屏 {record.cheat_count} 次
           </p>
           <p className="text-xs text-gray-400">开始 {formatDateTime(record.started_at)}</p>
+          {record.proctor && record.proctor.alert_status !== ALERT_STATUS.NONE && (
+            <p className="mt-1 flex items-center gap-2 text-xs">
+              <span className="text-gray-500">监考告警：</span>
+              <AlertStatusBadge status={record.proctor.alert_status} />
+              <span className="text-red-600">切屏 {record.proctor.switch_count} 次 · 粘贴 {record.proctor.paste_count} 次</span>
+            </p>
+          )}
         </div>
         <StatusBadge text={recordStatusText(record.status)} color={recordStatusColor(record.status)} />
       </div>

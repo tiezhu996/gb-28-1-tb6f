@@ -3,9 +3,11 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCountdown } from '@/hooks/useCountdown';
 import { recordApi, type AnswerInput } from '@/api/record';
+import { proctorApi } from '@/api/proctor';
 import { examApi } from '@/api/exam';
-import { QuestionTypeBadge } from '@/components/StatusBadge';
+import { QuestionTypeBadge, AlertStatusBadge } from '@/components/StatusBadge';
 import { questionTypeText } from '@/utils/format';
+import { ALERT_STATUS } from '@/constants';
 import type { Exam, ExamRecord } from '@/types';
 
 function ExamTake() {
@@ -23,8 +25,24 @@ function ExamTake() {
   const [cheatEvents, setCheatEvents] = useState<{ type: string; detail: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [notified5, setNotified5] = useState(false);
+  const [alertStatus, setAlertStatus] = useState<string>(ALERT_STATUS.NONE);
   const cheatRef = useRef(0);
   const eventsRef = useRef<{ type: string; detail: string }[]>([]);
+  const recordIdRef = useRef('');
+
+  // 监考留痕：每次切屏/粘贴实时上报（失败静默，不干扰答题）
+  const reportProctor = useCallback((type: 'switch_tab' | 'paste', detail: string) => {
+    const id = recordIdRef.current;
+    if (!id) return;
+    proctorApi
+      .reportEvent(id, { type, detail })
+      .then((res) => {
+        if (res.alert_status && res.alert_status !== ALERT_STATUS.NONE) {
+          setAlertStatus(res.alert_status);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     if (!recordId && !examId) return;
@@ -37,6 +55,10 @@ function ExamTake() {
       return;
     }
     setRecord(rec);
+    recordIdRef.current = rec.id;
+    if (rec.proctor && rec.proctor.alert_status !== ALERT_STATUS.NONE) {
+      setAlertStatus(rec.proctor.alert_status);
+    }
     try {
       const e = await examApi.get(rec.exam_id);
       setExam(e);
@@ -54,7 +76,7 @@ function ExamTake() {
     load();
   }, [load]);
 
-  // 防作弊：切屏检测（visibilitychange）+ 禁止复制粘贴
+  // 防作弊：切屏检测（visibilitychange）+ 禁止复制粘贴；切屏/粘贴实时上报监考留痕
   useEffect(() => {
     const onVisibility = () => {
       if (document.hidden) {
@@ -62,6 +84,7 @@ function ExamTake() {
         setCheatCount(cheatRef.current);
         eventsRef.current.push({ type: 'switch_tab', detail: `第${cheatRef.current}次切屏` });
         setCheatEvents([...eventsRef.current]);
+        reportProctor('switch_tab', `第${cheatRef.current}次切屏`);
       }
     };
     const onCopy = (e: ClipboardEvent) => {
@@ -77,6 +100,7 @@ function ExamTake() {
       setCheatCount(cheatRef.current);
       eventsRef.current.push({ type: 'copy_paste', detail: '尝试粘贴' });
       setCheatEvents([...eventsRef.current]);
+      reportProctor('paste', '尝试粘贴');
     };
     const onBlur = () => {
       cheatRef.current += 1;
@@ -94,7 +118,7 @@ function ExamTake() {
       document.removeEventListener('paste', onPaste);
       window.removeEventListener('blur', onBlur);
     };
-  }, []);
+  }, [reportProctor]);
 
   const endAt = useMemo(() => {
     if (!record) return 0;
@@ -255,6 +279,12 @@ function ExamTake() {
           <h3 className="text-sm font-semibold text-gray-700">题目导航</h3>
           <span className="text-xs text-red-500">切屏 {cheatCount} 次</span>
         </div>
+        {alertStatus !== ALERT_STATUS.NONE && (
+          <div className="mt-2 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+            <span>监考告警已生成，请规范作答</span>
+            <AlertStatusBadge status={alertStatus} />
+          </div>
+        )}
         <div className="mt-3 grid grid-cols-6 gap-1.5">
           {record.questions.map((item, i) => {
             const answered = answers[item.question_id] && answers[item.question_id].trim() !== '';

@@ -102,7 +102,57 @@ export interface ExamRecord {
   cheat_count: number;
   auto_submitted: boolean;
   questions: AttemptQuestion[];
+  proctor?: ProctorSummary;
   created_at: string;
+}
+
+// 答卷监考摘要（嵌入考试记录响应：学生成绩页/教师记录页展示最终告警状态与次数）
+export interface ProctorSummary {
+  alert_id?: string;
+  alert_status: string;
+  switch_count: number;
+  paste_count: number;
+}
+
+// 监考事件留痕（连续同类事件合并为一条，count 为累计次数）
+export interface ProctorEvent {
+  id: string;
+  type: string;
+  count: number;
+  detail: string;
+  first_at: string;
+  last_at: string;
+}
+
+// 监考告警
+export interface ProctorAlert {
+  id: string;
+  record_id: string;
+  exam_id: string;
+  exam_title: string;
+  student_id: string;
+  student_name: string;
+  trigger_type: string;
+  status: string;
+  opinion: string;
+  handler_name: string;
+  handled_at?: string | null;
+  switch_count: number;
+  paste_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProctorAlertDetail {
+  alert: ProctorAlert;
+  events: ProctorEvent[];
+}
+
+export interface ProctorReportResult {
+  ignored: boolean;
+  switch_count: number;
+  paste_count: number;
+  alert_status: string;
 }
 
 export interface WrongBook {

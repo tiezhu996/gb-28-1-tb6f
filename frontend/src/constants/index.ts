@@ -71,6 +71,33 @@ export const WRONG_BOOK_STATUS = {
   RESOLVED: 'resolved',
 } as const;
 
+// 监考事件类型枚举（与后端 constants.ProctorEventXxx 对应）
+export const PROCTOR_EVENT_TYPES = {
+  SWITCH_TAB: 'switch_tab',
+  PASTE: 'paste',
+} as const;
+
+export type ProctorEventType = (typeof PROCTOR_EVENT_TYPES)[keyof typeof PROCTOR_EVENT_TYPES];
+
+// 监考告警状态枚举（与后端 constants.AlertStatusXxx 对应，状态机：pending → confirmed/rejected）
+export const ALERT_STATUS = {
+  NONE: 'none',
+  PENDING: 'pending',
+  CONFIRMED: 'confirmed',
+  REJECTED: 'rejected',
+} as const;
+
+export type AlertStatus = (typeof ALERT_STATUS)[keyof typeof ALERT_STATUS];
+
+// 告警处理动作（与后端 HandleProctorAlertRequest.action 对应）
+export const ALERT_ACTIONS = {
+  CONFIRM: 'confirm',
+  REJECT: 'reject',
+} as const;
+
+// 任一类型事件累计达到该次数即生成待处理告警（与后端 constants.ProctorAlertThreshold 对应）
+export const PROCTOR_ALERT_THRESHOLD = 3;
+
 export const QUESTION_STATUS = {
   DRAFT: 'draft',
   PUBLISHED: 'published',

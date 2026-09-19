@@ -50,3 +50,15 @@ export function DifficultyBadge({ difficulty }: { difficulty: string }) {
   const [text, color] = map[difficulty] ?? [difficulty, 'gray'];
   return <StatusBadge text={text} color={color} />;
 }
+
+// 监考告警状态徽标（与后端 AlertStatus 枚举对应，学生成绩页/教师记录页/告警页复用）。
+export function AlertStatusBadge({ status }: { status: string }) {
+  const map: Record<string, [string, string]> = {
+    none: ['无告警', 'gray'],
+    pending: ['待处理', 'red'],
+    confirmed: ['已受理', 'orange'],
+    rejected: ['已驳回', 'green'],
+  };
+  const [text, color] = map[status] ?? [status, 'gray'];
+  return <StatusBadge text={text} color={color} />;
+}

@@ -84,6 +84,29 @@ const (
 	WrongBookStatusResolved = "resolved" // 已掌握
 )
 
+// 监考事件类型枚举（ProctorEventType）。
+// 出现位置：model/proctor_alert.go、dto/proctor_alert.go、service/proctor_alert_service.go、
+// handler/proctor_alert_handler.go、constants/error_codes.go、constants/log_templates.go、
+// util/formatters.go、前端 src/constants/index.ts、src/app/exam-take、src/app/alerts。
+const (
+	ProctorEventSwitchTab = "switch_tab" // 切屏（离开考试页面）
+	ProctorEventPaste     = "paste"      // 粘贴
+)
+
+// 监考告警状态枚举（ProctorAlertStatus）。
+// 出现位置：model/proctor_alert.go、dto/proctor_alert.go、service/proctor_alert_service.go、
+// handler/proctor_alert_handler.go、constants/error_codes.go、constants/log_templates.go、
+// util/formatters.go、前端 src/constants/index.ts、src/components/StatusBadge.tsx、src/app/alerts、src/app/records。
+const (
+	AlertStatusNone      = "none"      // 无告警（仅用于展示，不落库）
+	AlertStatusPending   = "pending"   // 待处理
+	AlertStatusConfirmed = "confirmed" // 已受理（确认违规）
+	AlertStatusRejected  = "rejected"  // 已驳回
+)
+
+// ProctorAlertThreshold 任一类型事件累计达到该次数即生成一条待处理告警。
+const ProctorAlertThreshold = 3
+
 // 审计操作动作枚举（AuditAction）。
 const (
 	AuditActionCreate  = "create"
@@ -120,6 +143,15 @@ var RecordStatusTransitions = map[string][]string{
 	RecordStatusInProgress: {RecordStatusSubmitted},
 	RecordStatusSubmitted:  {RecordStatusGraded},
 	RecordStatusGraded:     {},
+}
+
+// AlertStatusTransitions 监考告警状态机：待处理 → 已受理/已驳回，终态不可再流转。
+// 状态机规则同时存在于 service/proctor_alert_service.go、constants/error_codes.go、
+// constants/log_templates.go、util/formatters.go、前端 src/app/alerts/page.tsx。
+var AlertStatusTransitions = map[string][]string{
+	AlertStatusPending:   {AlertStatusConfirmed, AlertStatusRejected},
+	AlertStatusConfirmed: {},
+	AlertStatusRejected:  {},
 }
 
 // IsValidUserRole 校验角色是否合法。
@@ -159,6 +191,20 @@ func IsValidRecordStatus(s string) bool {
 func IsValidAnswerResult(r string) bool {
 	switch r {
 	case AnswerResultCorrect, AnswerResultWrong, AnswerResultPartial, AnswerResultUnmarked:
+		return true
+	}
+	return false
+}
+
+// IsValidProctorEventType 校验监考事件类型是否合法（切屏/粘贴）。
+func IsValidProctorEventType(t string) bool {
+	return t == ProctorEventSwitchTab || t == ProctorEventPaste
+}
+
+// IsValidAlertStatus 校验监考告警状态是否合法。
+func IsValidAlertStatus(s string) bool {
+	switch s {
+	case AlertStatusPending, AlertStatusConfirmed, AlertStatusRejected:
 		return true
 	}
 	return false

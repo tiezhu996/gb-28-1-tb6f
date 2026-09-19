@@ -46,6 +46,14 @@ const (
 	LogWrongBookAdded    = "错题加入错题本 student=%s question_id=%s"
 	LogWrongBookResolved = "错题标记为已掌握 student=%s question_id=%s"
 
+	// 监考告警模块（事件类型 switch_tab/paste，告警状态 pending/confirmed/rejected）
+	LogProctorEventRecorded = "监考事件留痕 record_id=%s event_type=%s count=%d student=%s"
+	LogProctorEventMerged   = "连续同类监考事件合并累计 record_id=%s event_type=%s count=%d student=%s"
+	LogProctorEventIgnored  = "答卷已结束不再产生新告警 record_id=%s event_type=%s status=%s"
+	LogProctorAlertCreated  = "监考告警生成 alert_id=%s record_id=%s trigger_type=%s student=%s"
+	LogProctorAlertHandled  = "监考告警处理完成 alert_id=%s record_id=%s conclusion=%s teacher=%s"
+	LogProctorAlertConflict = "监考告警并发处理冲突 alert_id=%s teacher=%s"
+
 	// 审计模块
 	LogAuditCreated = "审计日志写入成功 module=%s action=%s user=%s"
 )

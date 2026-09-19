@@ -11,19 +11,35 @@ import (
 	"github.com/onlineexam/onlineexam/internal/constants"
 	"github.com/onlineexam/onlineexam/internal/dto"
 	"github.com/onlineexam/onlineexam/internal/middleware"
+	"github.com/onlineexam/onlineexam/internal/model"
 	"github.com/onlineexam/onlineexam/internal/service"
 	"github.com/onlineexam/onlineexam/internal/util"
 )
 
 // ExamRecordHandler 考试记录 HTTP 处理器。
 type ExamRecordHandler struct {
-	svc    *service.ExamRecordService
-	logger *slog.Logger
+	svc     *service.ExamRecordService
+	proctor *service.ProctorAlertService // 复用监考告警服务嵌入最终告警状态与次数
+	logger  *slog.Logger
 }
 
 // NewExamRecordHandler 构造考试记录处理器。
-func NewExamRecordHandler(svc *service.ExamRecordService, logger *slog.Logger) *ExamRecordHandler {
-	return &ExamRecordHandler{svc: svc, logger: logger}
+func NewExamRecordHandler(svc *service.ExamRecordService, proctor *service.ProctorAlertService, logger *slog.Logger) *ExamRecordHandler {
+	return &ExamRecordHandler{svc: svc, proctor: proctor, logger: logger}
+}
+
+// proctorSummaries 批量查询答卷监考摘要；失败时降级为无告警（不阻断成绩/记录查询）。
+func (h *ExamRecordHandler) proctorSummaries(c *gin.Context, records ...*model.ExamRecord) map[primitive.ObjectID]dto.ProctorSummary {
+	ids := make([]primitive.ObjectID, 0, len(records))
+	for _, r := range records {
+		ids = append(ids, r.ID)
+	}
+	summaries, err := h.proctor.SummarizeByRecordIDs(c.Request.Context(), ids)
+	if err != nil {
+		h.logger.Warn("查询监考告警摘要失败，按无告警降级", "error", err.Error())
+		return map[primitive.ObjectID]dto.ProctorSummary{}
+	}
+	return summaries
 }
 
 // Start 学生开始考试。
@@ -64,7 +80,7 @@ func (h *ExamRecordHandler) Submit(c *gin.Context) {
 		Error(c, err)
 		return
 	}
-	SuccessMessage(c, constants.MsgRecordSubmitSuccess, dto.ToRecordResponse(rec))
+	SuccessMessage(c, constants.MsgRecordSubmitSuccess, dto.ToRecordResponseWithProctor(rec, h.proctorSummaries(c, rec)[rec.ID]))
 }
 
 // AutoSubmit 超时自动提交（教师/管理员触发或定时任务）。
@@ -79,7 +95,7 @@ func (h *ExamRecordHandler) AutoSubmit(c *gin.Context) {
 		Error(c, err)
 		return
 	}
-	Success(c, dto.ToRecordResponse(rec))
+	Success(c, dto.ToRecordResponseWithProctor(rec, h.proctorSummaries(c, rec)[rec.ID]))
 }
 
 // Grade 教师批改主观题。
@@ -114,7 +130,7 @@ func (h *ExamRecordHandler) Get(c *gin.Context) {
 		Error(c, err)
 		return
 	}
-	Success(c, dto.ToRecordResponse(rec))
+	Success(c, dto.ToRecordResponseWithProctor(rec, h.proctorSummaries(c, rec)[rec.ID]))
 }
 
 // ListMine 学生查询自己的考试记录。
@@ -129,9 +145,10 @@ func (h *ExamRecordHandler) ListMine(c *gin.Context) {
 		Error(c, err)
 		return
 	}
+	summaries := h.proctorSummaries(c, list...)
 	items := make([]dto.RecordResponse, 0, len(list))
 	for _, r := range list {
-		items = append(items, dto.ToRecordResponse(r))
+		items = append(items, dto.ToRecordResponseWithProctor(r, summaries[r.ID]))
 	}
 	PageResult(c, items, total, page.Page, page.PageSize)
 }
@@ -153,9 +170,10 @@ func (h *ExamRecordHandler) ListByExam(c *gin.Context) {
 		Error(c, err)
 		return
 	}
+	summaries := h.proctorSummaries(c, list...)
 	items := make([]dto.RecordResponse, 0, len(list))
 	for _, r := range list {
-		items = append(items, dto.ToRecordResponse(r))
+		items = append(items, dto.ToRecordResponseWithProctor(r, summaries[r.ID]))
 	}
 	PageResult(c, items, total, page.Page, page.PageSize)
 }

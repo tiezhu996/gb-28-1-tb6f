@@ -1,8 +1,10 @@
 // 格式化工具（与后端 util/formatters.go 对应，枚举文案需前后端同步）。
 import {
+  ALERT_STATUS,
   ANSWER_RESULT,
   DIFFICULTY,
   EXAM_STATUS,
+  PROCTOR_EVENT_TYPES,
   QUESTION_TYPES,
   RECORD_STATUS,
   ROLES,
@@ -96,6 +98,34 @@ export function recordStatusColor(s: string): string {
     case RECORD_STATUS.IN_PROGRESS: return 'orange';
     case RECORD_STATUS.SUBMITTED: return 'blue';
     case RECORD_STATUS.GRADED: return 'green';
+    default: return 'gray';
+  }
+}
+
+export function proctorEventTypeText(t: string): string {
+  switch (t) {
+    case PROCTOR_EVENT_TYPES.SWITCH_TAB: return '切屏';
+    case PROCTOR_EVENT_TYPES.PASTE: return '粘贴';
+    default: return t;
+  }
+}
+
+export function alertStatusText(s: string): string {
+  switch (s) {
+    case ALERT_STATUS.NONE: return '无告警';
+    case ALERT_STATUS.PENDING: return '待处理';
+    case ALERT_STATUS.CONFIRMED: return '已受理';
+    case ALERT_STATUS.REJECTED: return '已驳回';
+    default: return s;
+  }
+}
+
+export function alertStatusColor(s: string): string {
+  switch (s) {
+    case ALERT_STATUS.NONE: return 'gray';
+    case ALERT_STATUS.PENDING: return 'red';
+    case ALERT_STATUS.CONFIRMED: return 'orange';
+    case ALERT_STATUS.REJECTED: return 'green';
     default: return 'gray';
   }
 }
